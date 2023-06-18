@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en" class="page">
+<head>
+  <meta charset="UTF-8">
+  <title>VMessQRCode to VMess AEAD</title>
+
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    .page, .page__body {
+      box-sizing: border-box;
+      font-family: "Roboto", sans-serif;
+      color: white;
+    }
+
+    .page__body {
+      background: #1d1d1d;
+      padding: 20px;
+    }
+
+    .heading {
+      color: white;
+      font-family: "Roboto Thin", sans-serif;
+      text-align: center;
+    }
+
+    .description {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .form {
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #181818;
+      border-radius: 20px;
+
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .form__field {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .form__field--column {
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .form__input {
+      border-radius: 10px;
+      border: 0;
+      padding: 2px 10px;
+      width: 60%;
+    }
+
+    .form__textarea {
+      border-radius: 10px;
+      border: 0;
+      padding: 10px;
+      width: 100%;
+      min-height: 120px;
+    }
+
+    .form__textarea:read-only {
+      background-color: rgba(255, 255, 255, 0.700);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .form__input:read-only {
+      background-color: rgba(255, 255, 255, 0.700);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .form__submit {
+      display: block;
+      border: none;
+      border-radius: 20px;
+      width: 200px;
+      font-size: 20px;
+      margin: 50px auto 0;
+      cursor: pointer;
+      transition: 0.5s;
+    }
+
+    .form__submit:hover {
+      background-color: rgba(255, 255, 255, 0.400);
+    }
+
+  </style>
+</head>
+<body class="page__body">
+  <h1 class="heading">VMessQRCode to VMess AEAD</h1>
+  <p class="description">Tool that can create sub link with autoconverting vmess://base64 to VMess AEAD</p>
+  <form class="form" name="sub">
+    <div class="form__field">
+      <label class="form__label" for="in">Source subscription link</label>
+      <input class="form__input" id="in" type="text">
+    </div>
+    <div class="form__field">
+      <label class="form__label" for="out">Out subscription link</label>
+      <input class="form__input" id="out" type="text" readonly title="Click to copy">
+    </div>
+  </form>
+  <p style="text-align: center">OR</p>
+  <form class="form" name="config">
+    <div class="form__field form__field--column">
+      <label class="form__label" for="in-config">Source config</label>
+      <textarea class="form__textarea" id="in-config" name="config"></textarea>
+    </div>
+    <div class="form__field form__field--column">
+      <label class="form__label" for="out-config">Output config</label>
+      <textarea class="form__textarea" id="out-config" readonly title="Click to copy"></textarea>
+    </div>
+  </form>
+
+  <script>
+      const clipboard = navigator.clipboard;
+      const inInput = document.querySelector(`#in`);
+      const outInput = document.querySelector(`#out`);
+      const outConfig = document.querySelector(`#out-config`);
+
+      const fixedEncodeURIComponent = (str) => {
+        return encodeURIComponent(str).replace(/[!'()*]/g, (c) => {
+          return '%' + c.charCodeAt(0).toString(16)
+        })
+      }
+      const handleSubFormChange = (evt) => {
+          if (!evt.target.value.startsWith(`http`)) {
+              alert(`Subscription link must start with http(s)`)
+              return
+          }
+          outInput.value = location.href + fixedEncodeURIComponent(inInput.value);
+      };
+
+      const handleConfigFormChange = async (evt) => {
+          const formData = new FormData(evt.target.form);
+          const response = await fetch(`/config`, {
+              method: `POST`,
+              body: formData
+          });
+
+          outConfig.value = await response.text()
+      };
+
+      const handleCopy = (evt) => {
+          if (!evt.target.value) {
+              return
+          }
+          clipboard.writeText(evt.target.value).then(() => alert(`Subscription link copied`));
+      };
+
+      outInput.addEventListener(`click`, handleCopy);
+      outConfig.addEventListener(`click`, handleCopy);
+      document.querySelector(`[name=sub]`).addEventListener(`change`, handleSubFormChange);
+      document.querySelector(`[name=config]`).addEventListener(`change`, handleConfigFormChange);
+  </script>
+</body>
+</html>
